@@ -6,7 +6,7 @@ const port = 3000
 // res.send('Home Page'));
 
 //GLOBALS
-var TEST_PROD_ID = 1002;
+var TEST_PROD_ID = 0;
 const OPTIONS = {new: true};
 const FILTER = { ProductId : ((prodId) => {
   return this.prodId;
@@ -52,12 +52,6 @@ const ProductSchema = new mongoose.Schema({
   ProductType: String,
   ProductCategory: String,
   ProductPrice: Number,
-  Discount: Number,
-  Charges: {
-    GST: Number,
-    Delivery: Number,
-  },
-  FinalPrice: Number,
 });
 
 
@@ -86,6 +80,58 @@ app.get('/create', (req, res) => {
   res.send(createProduct(ID, NAME, TYPE, CATEGORY, PRICE));
 });
 
+// getting all products and calculating the final price
+// returns an array 
+function getProducts() {
+  const filter = {};
+  const arr = [];
+  Products.find(filter, (err, data) => {
+    if(err){
+      console.log(err);
+      return err;
+    } 
+    else {
+        data.forEach(product => {
+        const prodId = product.ProductId;
+        const name = product.ProductName;
+        const type = product.ProductType;
+        const category = product.ProductCategory;
+
+        const price = product.ProductPrice;
+        const finalDiscount = price * (charges[category].discount/100);
+        const delivery = charges[category].deliveryCharges;
+        const finalGst = price * (charges[category].gst/100);
+        const finalPrice = price - finalDiscount + (delivery + finalGst);
+
+        
+        let object = {
+          "productId": prodId,
+          "name": name,
+          "productType": type,
+          "category": category,
+          "basePrice": price,
+          "charges": {
+            "gst": finalGst,
+            "delivery": delivery,
+          },
+          "finalPrice": finalPrice
+        }
+
+        arr.push(object);
+      });
+      // console.log(arr);
+      // const finalData = Object.assign({}, arr); 
+      return arr;
+    }
+  })
+}
+
+// res.json is returning undefined !
+app.get('/getProducts', (req, res) => {
+  console.log(getProducts());
+  res.json(getProducts());
+})
+
 
 
 // getting all products
@@ -102,8 +148,6 @@ function getAllProducts() {
 app.get('/get-all-products', (req, res) => {
   res.send(getAllProducts());
 })
-
-
 
 
 //TODO: user should be able to delete a product by passing ProductId
@@ -125,7 +169,7 @@ app.get('/delete-id', (req, res) => {
 async function update(prodId){
   const options = OPTIONS;
   const filter = FILTER;
-  const update = { ProductName : '', ProductPrice: 0, ProductCategory : '', ProductType : '', ProductId : 0};
+  const update = { ProductName : '', ProductPrice: 0, ProductCategory : '', ProductType : '', ProductId : 0 };
 
   // Products.findOneAndUpdate(condition, updates value, whether to return the updated document or not)
   const response = await Products.findOneAndUpdate(filter, update, options, (err) => {if(err) console.log(err);});
