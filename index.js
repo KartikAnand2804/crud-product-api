@@ -63,6 +63,29 @@ const ProductSchema = new mongoose.Schema({
 
 const Products = mongoose.model('Product', ProductSchema);
 
+// creating all products
+const ID = 0;
+const NAME = '';
+const CATEGORY ='';
+const PRICE = 0;
+const TYPE = '';
+
+async function createProduct(id, name, type, category, price){
+  const response = await Products.create({
+    ProductId: id,
+    ProductName: name,
+    ProductCategory: category,
+    ProductPrice: price,
+    ProductType: type,
+  })
+
+  return response;
+};
+
+app.get('/create', (req, res) => {
+  res.send(createProduct(ID, NAME, TYPE, CATEGORY, PRICE));
+});
+
 
 
 // getting all products
